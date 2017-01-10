@@ -11,5 +11,6 @@ io.on('connection', function(socket) {
     socket.on('foo', function(data) {
         //将消息输出到控制台
         console.log(data);
+        socket.broadcast.emit('bor', data);
     })
 });
