@@ -43,7 +43,8 @@ function Card(data){
   this.data = data;
 
   var clickCard = function(event){
-    console.log(this.data.value);
+    // console.log(this.data.value);
+    console.log(this.logo.width);
   }
   PIXI.Container.call(this);
   this.width = Config.cardSizeW;

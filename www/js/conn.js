@@ -12,11 +12,11 @@ HiChat.prototype = {
         this.socket.on('connect', function() {
 	        var btn = document.getElementById('myHeader');
           var input = document.getElementById('inp');
-	        btn.onclick = function(){that.socket.emit('foo',allCards[0]);};
+	        btn.onclick = function(){that.socket.emit('foo',input.value);};
 
         });
         this.socket.on('bor', function(data){
-	        alert(data.value);
+	        alert(data);
 
         });
    }
