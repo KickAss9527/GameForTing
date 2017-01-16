@@ -4,22 +4,28 @@ var express = require('express'),
     io = require('socket.io').listen(server); //引入socket.io模块并绑定到服务器
 app.use('/', express.static(__dirname + '/www'));
 server.listen(8888);
-var length = 50;
-var tmp = [];
-for (var i = 0; i < length; i++) {
-  tmp[i] = i;
-}
-tmp.sort(function(){return 0.5 - Math.random();});
-var str = tmp.join(',');
+
+var CardConfig = require('./www/js/CardConfig.js');
+var ServerConfig = require('./www/js/conn.js');
 console.log('server started');
-console.log(str);
 
-
+var iUserLogin = 0;
+var arrUsers = {};
 io.on('connection', function(socket) {
+
     //接收并处理客户端发送的foo事件
-    socket.on('foo', function(data) {
-        //将消息输出到控制台
-        console.log(data+'111');
-        socket.broadcast.emit('bor', data);
+    socket.on(ServerConfig.Msg_Login, function(data) {
+        arrUsers[iUserLogin] = data;
+        console.log(arrUsers[iUserLogin] + ' login ~');
+        iUserLogin++;
+        socket.join(ServerConfig.Ser_Room);
+        if (iUserLogin == 2)
+        {
+          console.log('server : game start');
+          var randomList = CardConfig.GenerateInitList();
+          var msg = [randomList, arrUsers[0]];
+          socket.broadcast.to(ServerConfig.Ser_Room).emit(ServerConfig.Msg_GameStart, msg);
+        }
+
     })
 });

@@ -1,23 +1,16 @@
-var Config ={
-  cardNumCnt : 58, //数值卡
-  cardCoverCnt : 10, //日食月食卡
-  cardHandCnt : 5, //手牌数
-  cardSizeW : 100,
-  cardSizeH : 100*2.2,
+var GameConfig ={
   sceneWidth : 1440,
   sceneHeight : 960
 }
 
-
-
 function InitAllCards(arr)
 {
-  for (var i = 1; i <= Config.cardNumCnt*0.5; i++)
+  for (var i = 1; i <= CardConfig.cardNumCnt*0.5; i++)
   {
     arr.push(new CardData(CardConfig.Type_Day, i));
     arr.push(new CardData(CardConfig.Type_Night, i));
   }
-  for (var i = 0; i < Config.cardCoverCnt*0.5; i++) {
+  for (var i = 0; i < CardConfig.cardCoverCnt*0.5; i++) {
     arr.push(new CardData(CardConfig.Type_Day, -1));
     arr.push(new CardData(CardConfig.Type_Night, -1));
   }
@@ -34,22 +27,37 @@ function RandomCards(cards)
   }
 }
 
+function evtReady(evt)
+{
+  var lbl = evt.target;
+  lbl.text = "Waiting...";
+  connector.playerReady();
+}
+
+var connector = new Con();
+connector.init();
 var allCards = new Array();
 InitAllCards(allCards);
 RandomCards(allCards);
 
-var renderer = PIXI.autoDetectRenderer(Config.sceneWidth, Config.sceneHeight,{backgroundColor : 0x1099bb});
+var renderer = PIXI.autoDetectRenderer(GameConfig.sceneWidth, GameConfig.sceneHeight,{backgroundColor : 0x333333});
 document.getElementsByTagName('body')[0].appendChild(renderer.view);
 
 // create the root of the scene graph
 var stage = new PIXI.Container();
 
-for (var i = 0; i < 10; i++)
-{
-  var cardObj = new Card(allCards[i]);
-  cardObj.position.set(i*(Config.cardSizeW + 20)+10, 120);
-  stage.addChild(cardObj);
-}
+var tStyle = {
+  fontFamily : 'Arial',
+  fontSize: 40,
+  fill : 0x66ff00,
+  align : 'center'};
+this.lblReady = new PIXI.Text("Ready?",tStyle);
+this.lblReady.anchor.set(0.5,0.5);
+this.lblReady.position.set(GameConfig.sceneWidth*0.5, GameConfig.sceneHeight*0.5);
+this.lblReady.interactive = true;
+this.lblReady.on('click', evtReady);
+this.lblReady.on('tap', evtReady);
+stage.addChild(this.lblReady);
 
 animate();
 function animate() {

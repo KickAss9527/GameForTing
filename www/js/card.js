@@ -1,11 +1,3 @@
-var CardConfig = {
-  Type_Day : 1,
-  Type_Night : 2,
-  BgColor_Day : 0xf5f5d2,
-  BgColor_Night : 0x3b3c3c,
-  LblValMarginBtm : 10
-}
-
 function CardData(type, val){
   this.dayType = type;
   this.value = val;
@@ -47,14 +39,14 @@ function Card(data){
     console.log(this.logo.width);
   }
   PIXI.Container.call(this);
-  this.width = Config.cardSizeW;
-  this.height = Config.cardSizeH;
+  this.width = CardConfig.cardSizeW;
+  this.height = CardConfig.cardSizeH;
   this.interactive = true;
   this.on('click', clickCard);
 
   this.background = new PIXI.Graphics();
   this.background.beginFill(this.getBgColor());
-  this.background.drawRoundedRect(0,0, Config.cardSizeW, Config.cardSizeH, 8);
+  this.background.drawRoundedRect(0,0, CardConfig.cardSizeW, CardConfig.cardSizeH, 8);
   this.background.endFill();
   this.background.position.set(0,0);
   this.addChild(this.background);
