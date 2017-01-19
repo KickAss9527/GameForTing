@@ -21,22 +21,14 @@ Con.prototype = {
         this.socket = io.connect();
         this.socket.on('connect', function(socket) {
             console.log('link to server ok!');
+            that.socket.on(ServerConfig.Msg_GameStart, function(data){
+              var list = data[0];
+              var firstHand = that.userId==data[1];
+              gameInstance.state = firstHand ? GameState.PrepareFirstHand : GameState.PrepareSecondHand;
+
+            });
 
         });
-
-        this.socket.on(ServerConfig.Msg_GameStart, function(data){
-          var list = data[0];
-          var firstHand = that.userId==data[1];
-          alert(data[1]+'_'+that.userId);
-          if (firstHand)
-          {
-              console.log(that.userId);
-              
-          }
-        });
-
-        this.socket.on(ServerConfig.Ser_Test, function(data){alert(t);});
-
    },
 
    playerReady : function()

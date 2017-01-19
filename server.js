@@ -19,12 +19,12 @@ io.on('connection', function(socket) {
         console.log(arrUsers[iUserLogin] + ' login ~');
         iUserLogin++;
         socket.join(ServerConfig.Ser_Room);
-        if (iUserLogin == 2)
+        if (iUserLogin >= 1)
         {
           console.log('server : game start');
           var randomList = CardConfig.GenerateInitList();
           var msg = [randomList, arrUsers[0]];
-          socket.broadcast.to(ServerConfig.Ser_Room).emit(ServerConfig.Msg_GameStart, msg);
+          io.sockets.in(ServerConfig.Ser_Room).emit(ServerConfig.Msg_GameStart, msg);
         }
 
     })

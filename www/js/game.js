@@ -3,6 +3,53 @@ var GameConfig ={
   sceneHeight : 960
 }
 
+var GameState = {
+  Invalid : -1,
+  Waiting : 0,
+  PrepareFirstHand : 1,
+  PrepareSecondHand : 2,
+  PlayerTurn : 3,
+  OpponentTurn : 4,
+  CommunicateToServer : 5,
+  Init : 6
+}
+
+function Game(){
+
+  this.state = GameState.Init;
+  this.lblReady = null;
+  this.connector = new Con();
+  this.connector.init();
+  this.stage = new PIXI.Container();
+  this.lblReady = null;
+
+};
+
+Game.prototype = {
+  evtReady : function(evt)
+  {
+    gameInstance.lblReady.text = "Waiting...";
+    gameInstance.connector.playerReady();
+  },
+
+  initPrepareInfo : function()
+  {
+    var tStyle = {
+      fontFamily : 'Arial',
+      fontSize: 40,
+      fill : 0x66ff00,
+      align : 'center'};
+
+    this.lblReady = new PIXI.Text("Ready?",tStyle);
+    this.lblReady.anchor.set(0.5,0.5);
+    this.lblReady.position.set(GameConfig.sceneWidth*0.5, GameConfig.sceneHeight*0.5);
+    this.lblReady.interactive = true;
+    this.lblReady.on('click', this.evtReady);
+    this.lblReady.on('tap', this.evtReady);
+    this.stage.addChild(this.lblReady);
+  }
+};
+
 function InitAllCards(arr)
 {
   for (var i = 1; i <= CardConfig.cardNumCnt*0.5; i++)
@@ -27,45 +74,34 @@ function RandomCards(cards)
   }
 }
 
-function evtReady(evt)
-{
-  var lbl = evt.target;
-  lbl.text = "Waiting...";
-  connector.playerReady();
-}
-
-var connector = new Con();
-connector.init();
+var gameInstance = new Game();
 var allCards = new Array();
-InitAllCards(allCards);
-RandomCards(allCards);
-
+// InitAllCards(allCards);
+// RandomCards(allCards);
 var renderer = PIXI.autoDetectRenderer(GameConfig.sceneWidth, GameConfig.sceneHeight,{backgroundColor : 0x333333});
 document.getElementsByTagName('body')[0].appendChild(renderer.view);
-
-// create the root of the scene graph
-var stage = new PIXI.Container();
-
-var tStyle = {
-  fontFamily : 'Arial',
-  fontSize: 40,
-  fill : 0x66ff00,
-  align : 'center'};
-this.lblReady = new PIXI.Text("Ready?",tStyle);
-this.lblReady.anchor.set(0.5,0.5);
-this.lblReady.position.set(GameConfig.sceneWidth*0.5, GameConfig.sceneHeight*0.5);
-this.lblReady.interactive = true;
-this.lblReady.on('click', evtReady);
-this.lblReady.on('tap', evtReady);
-stage.addChild(this.lblReady);
-
 animate();
 function animate() {
+    switch (gameInstance.state)
+    {
+      case GameState.Init:
+      {
+        gameInstance.initPrepareInfo();
+        gameInstance.state = GameState.Waiting;
+      }
+      break;
+      case GameState.Waiting:{}break;
+      case GameState.PrepareFirstHand:
+      case GameState.PrepareSecondHand:
+      {
+        //发牌
+      }break;
+      default:alert();break;
+
+    }
     requestAnimationFrame(animate);
-
-    // just for fun, let's rotate mr rabbit a little
-    //bunny.rotation += 0.1;
-
-    // render the container
-    renderer.render(stage);
+    renderer.render(gameInstance.stage);
 }
+
+
+// create the root of the scene graph

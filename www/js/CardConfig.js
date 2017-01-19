@@ -11,7 +11,10 @@ var CardConfig = {
   LblValMarginBtm : 10,
 
   GenerateInitList:function(){
-    var length = CardConfig.cardNumCnt+CardConfig.cardCoverCnt;
+    return this.GenerateRandomList(CardConfig.cardNumCnt+CardConfig.cardCoverCnt);
+  },
+
+  GenerateRandomList : function(length){
     var tmp = [];
     for (var i = 0; i < length; i++) {
       tmp[i] = i;
