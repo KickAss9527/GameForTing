@@ -3,7 +3,7 @@ var CardConfig = {
   cardCoverCnt : 10, //日食月食卡
   cardHandCnt : 5, //手牌数
   cardSizeW : 100,
-  cardSizeH : 100*2.2,
+  cardSizeH : 100*1.7,
   Type_Day : 1,
   Type_Night : 2,
   BgColor_Day : 0xf5f5d2,

@@ -22,10 +22,9 @@ Con.prototype = {
         this.socket.on('connect', function(socket) {
             console.log('link to server ok!');
             that.socket.on(ServerConfig.Msg_GameStart, function(data){
-              var list = data[0];
+              gameInstance.cardRandomList = data[0];
               var firstHand = that.userId==data[1];
               gameInstance.state = firstHand ? GameState.PrepareFirstHand : GameState.PrepareSecondHand;
-
             });
 
         });

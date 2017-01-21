@@ -33,7 +33,8 @@ function Card(data){
   };
 
   this.data = data;
-
+  this.dragging = false;
+  this.interactiveData = null;
   var clickCard = function(event){
     // console.log(this.data.value);
     console.log(this.logo.width);
@@ -42,7 +43,7 @@ function Card(data){
   this.width = CardConfig.cardSizeW;
   this.height = CardConfig.cardSizeH;
   this.interactive = true;
-  this.on('click', clickCard);
+  // this.on('click', clickCard);
 
   this.background = new PIXI.Graphics();
   this.background.beginFill(this.getBgColor());
