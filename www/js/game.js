@@ -82,27 +82,7 @@ Game.prototype = {
         var data = this.cardStack.pop();
         var card = new Card(data);
         card.x = i*(card.width+10);
-        card.on('click', function(event){
-          alert(this.data.value);
-        });
-        card.on('mousedown', function(event){
-          this.alpha = 0.5;
-          this.interactiveData = event.data;
-          this.dragging = true;
-        });
-        card.on('mouseup', function(event){
-          this.alpha = 1;
-          this.interactiveData = null;
-          this.dragging = false;
-        });
-        card.on('mousemove', function(event){
-          if(this.dragging)
-          {
-            var newPosition = this.interactiveData.getLocalPosition(this.parent);
-            this.position.x = newPosition.x - this.width*0.5;
-            this.position.y = newPosition.y - this.height*0.5;
-          }
-        });
+
         this.playerCardView.addChild(card);
       }
       if (this.state == GameState.PrepareFirstHand)
@@ -111,8 +91,6 @@ Game.prototype = {
       }
       console.log("stack count : %d", this.cardStack.length);
   },
-
-
 
   InitCardStack : function()
   {
@@ -143,6 +121,7 @@ var gameInstance = new Game();
 var allCards = new Array();
 var renderer = PIXI.autoDetectRenderer(GameConfig.sceneWidth, GameConfig.sceneHeight,{backgroundColor : 0x333333});
 document.getElementsByTagName('body')[0].appendChild(renderer.view);
+
 animate();
 function animate() {
     switch (gameInstance.state)
@@ -168,6 +147,7 @@ function animate() {
     }
     requestAnimationFrame(animate);
     renderer.render(gameInstance.stage);
+    PIXI.tweenManager.update();
 }
 
 

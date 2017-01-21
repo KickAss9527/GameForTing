@@ -32,18 +32,53 @@ function Card(data){
     return "img/bug_" + idx + ".png";
   };
 
+  this.isDropAble = function(){
+    return false;
+  };
+
   this.data = data;
   this.dragging = false;
   this.interactiveData = null;
-  var clickCard = function(event){
-    // console.log(this.data.value);
-    console.log(this.logo.width);
-  }
+  this.originalPosition = null;
   PIXI.Container.call(this);
   this.width = CardConfig.cardSizeW;
   this.height = CardConfig.cardSizeH;
   this.interactive = true;
-  // this.on('click', clickCard);
+
+  this.on('click', function(event){
+    console.log(this.data.value);
+  }).on('mousedown', function(event){
+    this.alpha = 0.5;
+    this.interactiveData = event.data;
+    this.dragging = true;
+    this.originalPosition = new PIXI.Point(this.x, this.y);
+  }).on('mouseup', function(event){
+    this.alpha = 1;
+    this.interactiveData = null;
+    this.dragging = false;
+    if (this.isDropAble())
+    {
+      //放好
+    }
+    else
+    {
+
+        // this.position = this.originalPosition;
+        var tween = PIXI.tweenManager.createTween(this);
+        tween.time = 1000;
+        tween.to({x:this.originalPosition.x, y:this.originalPosition.y});
+        tween.easing = PIXI.tween.Easing.outBack();
+        tween.start();
+        console.log(this.originalPosition);
+    }
+  }).on('mousemove', function(event){
+    if(this.dragging)
+    {
+      var newPosition = this.interactiveData.getLocalPosition(this.parent);
+      this.position.x = newPosition.x - this.width*0.5;
+      this.position.y = newPosition.y - this.height*0.5;
+    }
+  });
 
   this.background = new PIXI.Graphics();
   this.background.beginFill(this.getBgColor());
