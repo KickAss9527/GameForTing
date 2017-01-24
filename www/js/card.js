@@ -2,7 +2,7 @@ function CardData(type, val){
   this.dayType = type;
   this.value = val;
 
-  this.hasBug = function(){
+  this.hasBug = function()
     var value = this.value;
     if (value==1 || value==4 || value==9 || value==14 ||
         value==19 || value==20 || value==25 || value==29)
@@ -121,3 +121,19 @@ function Card(data){
   }
 }
 Card.prototype = Object.create(PIXI.Container.prototype);
+
+
+function CardParentView(width, height)
+{
+    PIXI.Container.call(this);
+    this.cardType = 0;
+    this.width = width;
+    this.height = height;
+    this.borderLayer = new PIXI.Graphics();
+    this.borderLayer.lineStyle(1, 0x006666, 1);
+    this.borderLayer.beginFill(0x444444, 0);
+    this.borderLayer.drawRect(0, 0, width, height);
+    this.borderLayer.endFill();
+    this.addChild(this.borderLayer);
+}
+CardParentView.prototype = Object.create(PIXI.Container.prototype);

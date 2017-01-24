@@ -24,6 +24,10 @@ function Game(){
   this.stage = new PIXI.Container();
   this.lblReady = null;
   this.playerCardView = null;
+  this.playerDayView = null;
+  this.playerNightView = null;
+  this.opponentDayView = null;
+  this.opponentNightView = null;
   this.cardStack = null;
   this.cardStack_Discard = null;
   this.cardRandomList = null;
@@ -54,8 +58,19 @@ Game.prototype = {
     this.stage.addChild(this.lblReady);
   },
 
+  loadBorderContainer : function(width, height)
+  {
+    var gra = new PIXI.Graphics();
+    gra.lineStyle(1, 0x006666, 1);
+    gra.beginFill(0x444444, 0);
+    gra.drawRect(0, 0, width, height);
+    gra.endFill();
+    return gra;
+  },
+
   initPlayerCardView : function()
   {
+      this.lblReady.parent.removeChild(this.lblReady);
       this.playerCardView = new PIXI.Container();
       this.stage.addChild(this.playerCardView);
       var width = GameConfig.sceneWidth-2;
@@ -63,13 +78,26 @@ Game.prototype = {
       this.playerCardView.width = width;
       this.playerCardView.height = height;
       this.playerCardView.position.set(1,GameConfig.sceneHeight - CardConfig.cardSizeH);
+      this.playerCardView.addChild(this.loadBorderContainer(width, height));
 
-      var gra = new PIXI.Graphics();
-      gra.lineStyle(1, 0x006666, 1);
-      gra.beginFill(0x444444, 0);
-      gra.drawRect(0, 0, width, height);
-      gra.endFill();
-      this.playerCardView.addChild(gra);
+      this.playerDayView = new CardParentView(width, height);
+      this.playerNightView = new CardParentView(width, height);
+      this.opponentDayView = new CardParentView(width, height);
+      this.opponentNightView = new CardParentView(width, height);
+      this.playerDayView.cardType = CardConfig.Type_Day;
+      this.playerNightView.cardType = CardConfig.Type_Night;
+      this.opponentDayView.cardType = CardConfig.Type_Day;
+      this.opponentNightView.cardType = CardConfig.Type_Night;
+
+      this.stage.addChild(this.playerDayView);
+      this.stage.addChild(this.playerNightView);
+      this.stage.addChild(this.opponentDayView);
+      this.stage.addChild(this.opponentNightView);
+
+      this.playerNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*2);
+      this.playerDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*3);
+      this.opponentNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*4);
+      this.opponentDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*5);
 
       console.log("stack count : %d", this.cardStack.length);
       this.opponentCardStack = new Array();
