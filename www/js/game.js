@@ -32,6 +32,7 @@ function Game(){
   this.cardStack_Discard = null;
   this.cardRandomList = null;
   this.opponentCardStack = null;
+  this.btnDiscard = null;
 };
 
 Game.prototype = {
@@ -80,14 +81,29 @@ Game.prototype = {
       this.playerCardView.position.set(1,GameConfig.sceneHeight - CardConfig.cardSizeH);
       this.playerCardView.addChild(this.loadBorderContainer(width, height));
 
-      this.playerDayView = new CardParentView(width, height);
-      this.playerNightView = new CardParentView(width, height);
-      this.opponentDayView = new CardParentView(width, height);
-      this.opponentNightView = new CardParentView(width, height);
-      this.playerDayView.cardType = CardConfig.Type_Day;
-      this.playerNightView.cardType = CardConfig.Type_Night;
-      this.opponentDayView.cardType = CardConfig.Type_Day;
-      this.opponentNightView.cardType = CardConfig.Type_Night;
+// load btn Discard
+      var tStyle = {
+        fontFamily : 'Arial',
+        fontSize: 18,
+        fill : 0x66ff00,
+        align : 'center'};
+
+      this.btnDiscard = new PIXI.Text("Discard",tStyle);
+      this.btnDiscard.anchor.set(0.5,0.5);
+      this.btnDiscard.position.set(50, -20);
+      this.btnDiscard.interactive = true;
+      var discardEvt = function(){
+        alert();
+      };
+      this.btnDiscard.on('click', discardEvt);
+      this.btnDiscard.on('tap', discardEvt);
+      this.playerCardView.addChild(this.btnDiscard);
+
+//load 4 game card board
+      this.playerDayView = new CardParentView(width, height, CardConfig.Type_Day);
+      this.playerNightView = new CardParentView(width, height, CardConfig.Type_Night);
+      this.opponentDayView = new CardParentView(width, height, CardConfig.Type_Day);
+      this.opponentNightView = new CardParentView(width, height, CardConfig.Type_Night);
 
       this.stage.addChild(this.playerDayView);
       this.stage.addChild(this.playerNightView);
@@ -99,6 +115,7 @@ Game.prototype = {
       this.opponentNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*4);
       this.opponentDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*5);
 
+//load initial cardsprite
       console.log("stack count : %d", this.cardStack.length);
       this.opponentCardStack = new Array();
       if (this.state == GameState.PrepareSecondHand)
@@ -142,6 +159,52 @@ Game.prototype = {
       newCardStack.push(this.cardStack[this.cardRandomList[i]]);
     }
     this.cardStack = newCardStack;
+  },
+
+  canPlayThisCard : function (card)
+  {
+    var center = card.parent.toGlobal(card.position);
+    center.x += 0.5*card.width;
+    center.y += 0.5*card.height;
+    var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
+    for (var i = 0; i < parentView.length; i++)
+    {
+      var view = parentView[i];
+      if (view.cardType == card.data.dayType &&
+          center.y <= view.y + view.height && center.y >= view.y)
+      {
+          return view;
+      }
+    }
+
+    return null;
+  },
+
+  playCard : function(card, targetView)
+  {
+    var cardWorldPos = card.parent.toGlobal(card.position);
+    var cardLocalPos = targetView.toLocal(cardWorldPos);
+    var cardTargetViewLocalPos = new PIXI.Point(cardLocalPos.x, 0);
+    var cardTargetWorldPos = targetView.toGlobal(cardTargetViewLocalPos);
+    var cardTargetLocalPos = card.parent.toLocal(cardTargetWorldPos);
+    var tween = PIXI.tweenManager.createTween(card);
+    tween.time = 300;
+    tween.to(cardTargetLocalPos);
+    tween.easing = PIXI.tween.Easing.inQuad();
+    tween.start();
+    tween.on("end", function(){
+       card.position = cardTargetViewLocalPos;
+       card.parent.removeChild(card);
+       targetView.addChild(card);
+//targetView 本来还有个children， bug
+       console.log(targetView.children.length);
+    });
+  },
+
+  showTip : function()
+  {
+    //检查 collect
+
   }
 };
 
@@ -169,6 +232,11 @@ function animate() {
         gameInstance.initPlayerCardView();
         //发牌
         gameInstance.state = gameInstance==GameState.PrepareFirstHand ? GameState.PlayerTurn : GameState.OpponentTurn;
+      }break;
+      case GameState.PlayerTurn:
+      case GameState.OpponentTurn:
+      {
+        gameInstance.showTip();
       }break;
       default:break;
 

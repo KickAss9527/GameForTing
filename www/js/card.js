@@ -2,7 +2,7 @@ function CardData(type, val){
   this.dayType = type;
   this.value = val;
 
-  this.hasBug = function()
+  this.hasBug = function(){
     var value = this.value;
     if (value==1 || value==4 || value==9 || value==14 ||
         value==19 || value==20 || value==25 || value==29)
@@ -10,7 +10,7 @@ function CardData(type, val){
           return true;
         }
     return false;
-  };
+  }
 }
 
 function Card(data){
@@ -33,7 +33,7 @@ function Card(data){
   };
 
   this.isDropAble = function(){
-    return false;
+    return gameInstance.canPlayThisCard(this);
   };
 
   this.data = data;
@@ -56,20 +56,19 @@ function Card(data){
     this.alpha = 1;
     this.interactiveData = null;
     this.dragging = false;
-    if (this.isDropAble())
+
+    var dropView = this.isDropAble();
+    if (dropView)
     {
-      //放好
+      gameInstance.playCard(this, dropView);
     }
     else
     {
-
-        // this.position = this.originalPosition;
         var tween = PIXI.tweenManager.createTween(this);
-        tween.time = 1000;
+        tween.time = 300;
         tween.to({x:this.originalPosition.x, y:this.originalPosition.y});
-        tween.easing = PIXI.tween.Easing.outBack();
+        tween.easing = PIXI.tween.Easing.inQuad();
         tween.start();
-        console.log(this.originalPosition);
     }
   }).on('mousemove', function(event){
     if(this.dragging)
@@ -123,17 +122,33 @@ function Card(data){
 Card.prototype = Object.create(PIXI.Container.prototype);
 
 
-function CardParentView(width, height)
+function CardParentView(width, height, cardType)
 {
     PIXI.Container.call(this);
-    this.cardType = 0;
+    this.cardType = cardType;
     this.width = width;
     this.height = height;
     this.borderLayer = new PIXI.Graphics();
-    this.borderLayer.lineStyle(1, 0x006666, 1);
-    this.borderLayer.beginFill(0x444444, 0);
+
+    var color = 0x444444;
+    if (cardType == CardConfig.Type_Day)
+    {
+      color = 0xffffff;
+    }
+    else if(cardType == CardConfig.Type_Night)
+    {
+      color = 0x0000FF;
+    }
+    this.borderLayer.lineStyle(1, color, 1);
     this.borderLayer.drawRect(0, 0, width, height);
-    this.borderLayer.endFill();
     this.addChild(this.borderLayer);
 }
 CardParentView.prototype = Object.create(PIXI.Container.prototype);
+
+function CardOnBoard(card)
+{
+  this.left = null;
+  this.right = null;
+  this.above = null;
+  this.card = card;
+}CardOnBoard.prototype = Object.create(PIXI.Container.prototype);
