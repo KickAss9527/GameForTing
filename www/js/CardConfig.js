@@ -9,6 +9,8 @@ var CardConfig = {
   BgColor_Day : 0xf5f5d2,
   BgColor_Night : 0x3b3c3c,
   LblValMarginBtm : 10,
+  CardMinValue : 1,
+  CardMaxValue : 58*0.5,
 
   GenerateInitList:function(){
     return this.GenerateRandomList(CardConfig.cardNumCnt+CardConfig.cardCoverCnt);

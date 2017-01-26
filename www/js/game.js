@@ -1,7 +1,11 @@
 var GameConfig ={
   sceneWidth : 1440,
   sceneHeight : 960,
-  handCardCnt : 5
+  handCardCnt : 5,
+  ViewTag_OpponentDay : 1,
+  ViewTag_OpponentNight : 2,
+  ViewTag_PlayerDay : 3,
+  ViewTag_PlayerNight : 4
 }
 
 var GameState = {
@@ -104,6 +108,10 @@ Game.prototype = {
       this.playerNightView = new CardParentView(width, height, CardConfig.Type_Night);
       this.opponentDayView = new CardParentView(width, height, CardConfig.Type_Day);
       this.opponentNightView = new CardParentView(width, height, CardConfig.Type_Night);
+      this.playerDayView.tag = GameConfig.ViewTag_PlayerDay;
+      this.playerNightView.tag = GameConfig.ViewTag_PlayerNight;
+      this.opponentDayView.tag = GameConfig.ViewTag_OpponentDay;
+      this.opponentNightView.tag = GameConfig.ViewTag_OpponentNight;
 
       this.stage.addChild(this.playerDayView);
       this.stage.addChild(this.playerNightView);
@@ -134,7 +142,6 @@ Game.prototype = {
       {
         for(var i=0; i<GameConfig.handCardCnt; i++){this.opponentCardStack.push(this.cardStack.pop());}
       }
-      console.log("stack count : %d", this.cardStack.length);
   },
 
   InitCardStack : function()
@@ -169,42 +176,40 @@ Game.prototype = {
     var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
     for (var i = 0; i < parentView.length; i++)
     {
-      var view = parentView[i];
-      if (view.cardType == card.data.dayType &&
-          center.y <= view.y + view.height && center.y >= view.y)
+      var targetView = parentView[i];
+      if (targetView.cardType == card.data.dayType &&
+          center.y <= targetView.y + targetView.height && center.y >= targetView.y)
+          //在大队列范围内
       {
-          return view;
+        if (targetView.cardContainer.children.length == 0)
+        {
+          return targetView;
+        }
       }
     }
 
     return null;
   },
 
-  playCard : function(card, targetView)
+  hideTip : function(cardData)
   {
-    var cardWorldPos = card.parent.toGlobal(card.position);
-    var cardLocalPos = targetView.toLocal(cardWorldPos);
-    var cardTargetViewLocalPos = new PIXI.Point(cardLocalPos.x, 0);
-    var cardTargetWorldPos = targetView.toGlobal(cardTargetViewLocalPos);
-    var cardTargetLocalPos = card.parent.toLocal(cardTargetWorldPos);
-    var tween = PIXI.tweenManager.createTween(card);
-    tween.time = 300;
-    tween.to(cardTargetLocalPos);
-    tween.easing = PIXI.tween.Easing.inQuad();
-    tween.start();
-    tween.on("end", function(){
-       card.position = cardTargetViewLocalPos;
-       card.parent.removeChild(card);
-       targetView.addChild(card);
-//targetView 本来还有个children， bug
-       console.log(targetView.children.length);
-    });
+    var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
+    for (var i = 0; i < parentView.length; i++)
+    {
+      var targetView = parentView[i];
+      targetView.hideTip(cardData);
+    }
   },
 
-  showTip : function()
+  showTip : function(cardData)
   {
     //检查 collect
-
+    var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
+    for (var i = 0; i < parentView.length; i++)
+    {
+      var targetView = parentView[i];
+      targetView.showTip(cardData);
+    }
   }
 };
 
@@ -236,7 +241,7 @@ function animate() {
       case GameState.PlayerTurn:
       case GameState.OpponentTurn:
       {
-        gameInstance.showTip();
+
       }break;
       default:break;
 
