@@ -4,6 +4,8 @@ var CardConfig = {
   cardHandCnt : 5, //手牌数
   cardSizeW : 100,
   cardSizeH : 100*1.7,
+  cardSpaceBetween : 8,
+  cardCollectMinCnt : 5,
   Type_Day : 1,
   Type_Night : 2,
   BgColor_Day : 0xf5f5d2,

@@ -16,7 +16,9 @@ var GameState = {
   PlayerTurn : 3,
   OpponentTurn : 4,
   CommunicateToServer : 5,
-  Init : 6
+  Init : 6,
+  PlayerTurnWaiting : 7,
+  OpponentTurnWaiting : 8
 }
 
 function Game(){
@@ -131,6 +133,11 @@ Game.prototype = {
       for(var i=0; i<GameConfig.handCardCnt; i++)
       {
         var data = this.cardStack.pop();
+        data.value = i+1;
+        data.dayType = 1;
+        if (i%3==0) {
+          data.value = -1;
+        }
         var card = new CardOnBoard(new Card(data));
         card.tag = i;
         card.setupCardPlayerEvent(true);
@@ -212,6 +219,14 @@ Game.prototype = {
     }
   },
 
+  showWaitingTip : function()
+  {
+    // if (this.state == GameState.PlayerTurn) {
+        this.playerDayView.showCollectTip();
+        this.playerNightView.showCollectTip();
+    // }
+  },
+
   refreshPlayerCardsLayout : function(){
     this.refreshCardsLayout(this.playerCardView.cardNodeParent);
   },
@@ -275,10 +290,16 @@ function animate() {
         gameInstance.state = gameInstance==GameState.PrepareFirstHand ? GameState.PlayerTurn : GameState.OpponentTurn;
       }break;
       case GameState.PlayerTurn:
+      {
+        // gameInstance.showCollectTip();
+        gameInstance.state = PlayerTurnWaiting;
+      }break;
+      case GameState.PlayerTurnWaiting:{}break;
       case GameState.OpponentTurn:
       {
 
       }break;
+      case gameInstance.OpponentTurnWaiting:{}break;
       default:break;
 
     }

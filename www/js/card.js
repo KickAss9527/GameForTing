@@ -80,3 +80,44 @@ function Card(data){
   }
 }
 Card.prototype = Object.create(PIXI.Container.prototype);
+
+function CollectTipView()
+{
+  PIXI.Graphics.call(this);
+  var tStyle = {
+    fontFamily : 'Arial',
+    fontSize: 40,
+    fill : 0x33FF33,
+    align : 'center'};
+  this.lblReady = new PIXI.Text("Collect!!!",tStyle);
+  this.lblReady.anchor.set(0.5,0.5);
+  this.addChild(this.lblReady);
+  this.visible = false;
+  this.lineStyle(2, 0x11FF11, 1);
+  this.collectInfo = null;
+
+  this.updateDisplay = function(idxRange)
+  {
+    this.collectInfo = idxRange;
+
+    if (this.collectInfo)
+    {
+      var cardCnt = idxRange.y - idxRange.x + 1;
+      var width = cardCnt*CardConfig.cardSizeW + (cardCnt-1)*CardConfig.cardSpaceBetween;
+      var height = CardConfig.cardSizeH;
+      this.beginFill(0x33FF33, 0.05);
+      this.drawRect(0, 0, width, height);
+      this.endFill();
+      this.lblReady.position.set(width*0.5, height*0.5);
+      this.visible = true;
+      this.interactive = true;
+    }
+    else {
+      this.visible = false;
+      this.interactive = false;
+    }
+  };
+
+  this.on('click', function(){console.log("enen");});
+
+}CollectTipView.prototype = Object.create(PIXI.Graphics.prototype);

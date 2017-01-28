@@ -1,3 +1,4 @@
+
 function CardParentView(width, height, cardType)
 {
     PIXI.Container.call(this);
@@ -15,6 +16,9 @@ function CardParentView(width, height, cardType)
 
     this.cardTipParent.width = this.cardNodeParent.width = width;
     this.cardTipParent.height = this.cardNodeParent.height = height;
+
+    this.viewCollectTip = new CollectTipView();
+    this.addChild(this.viewCollectTip);
 
     this.tag = 0;
 
@@ -64,14 +68,17 @@ function CardParentView(width, height, cardType)
         for (var j = 0; j < arr.length; j++) {
           var card = arr[j];
           var tween = PIXI.tweenManager.createTween(card);
-          tween.time = 100;
+          tween.time = 300;
           tween.to({"x":pos.x, "y":pos.y});
           tween.start();
+          if (j == arr.length - 1) {
+            var that = this;
+            tween.on('end', function(){that.showCollectTip();});
+          }
         }
       }
     };
 
-    var cardSpaceWidth = 5;
     this.prepareNextCards = function()
     {
       if (this.arrCardTip.length == 0)
@@ -87,11 +94,11 @@ function CardParentView(width, height, cardType)
       var cardW = CardConfig.cardSizeW;
       var cnt = this.arrCardTip.length;
 
-      var x = 0.5*this.width - 0.5*(cnt*cardW + (cnt-1)*cardSpaceWidth);
+      var x = 0.5*this.width - 0.5*(cnt*cardW + (cnt-1)*CardConfig.cardSpaceBetween);
 
       for (var i = 0; i < cnt; i++) {
         var node = this.arrCardTip[i];
-        var newPos = new PIXI.Point(x + i*(cardSpaceWidth + cardW), 0);
+        var newPos = new PIXI.Point(x + i*(CardConfig.cardSpaceBetween + cardW), 0);
         node.x = newPos.x;
       }
     };
@@ -118,16 +125,20 @@ function CardParentView(width, height, cardType)
       this.cardNodeParent.addChild(card);
 
       var head = this.getHeadNode();
-      if(head && head.getData().value >= CardConfig.CardMinValue) idx--;
+      if(head) idx--;
 
       if (idx >= this.arrCardNode.length ) {
         this.arrCardNode.splice(idx, 0, new Array());
-      }else if(idx < 0)
+      }
+      else if(idx < 0)
       {
         idx = 0;
         this.arrCardNode.splice(0, 0, new Array());
       }
+      else
+      {
 
+      }
       var arr = this.arrCardNode[idx];
       console.log(idx+"_"+arr);
       arr.push(card);
@@ -190,7 +201,8 @@ function CardParentView(width, height, cardType)
       var center = this.getPlayerCardLocalPos(card);
       center.x += card.width*0.5;
       center.y += card.height*0.5;
-      return this.getMatchedCardNode(center)!= null;
+      var cardTip = this.getMatchedCardNode(center);
+      return cardTip && cardTip.visible;
     };
 
     this.getSurfaceArr = function(){
@@ -204,7 +216,6 @@ function CardParentView(width, height, cardType)
 
     this.canShowTip = function(cardData)
     {
-
       if(cardData.dayType == CardConfig.Type_Night)
       {
         if (this.tag == GameConfig.ViewTag_PlayerNight || this.tag == GameConfig.ViewTag_OpponentNight)
@@ -232,9 +243,49 @@ function CardParentView(width, height, cardType)
         return;
       }
       console.log("card parent view hide tip");
+      this.viewCollectTip.updateDisplay(null);
       for (var i = 0; i < this.cardTipParent.children.length; i++) {
         var node = this.cardTipParent.children[i];
         node.visible = false;
+      }
+    };
+
+    this.canCollect = function(surfaceCards)
+    {
+      var cnt = 0;
+      var idxStart=0;
+      var idxEnd = 0;
+
+      for (var i = 0; i < surfaceCards.length; i++)
+      {
+        var card = surfaceCards[i];
+        if (card.getData().value > 0)
+        {
+          cnt++;
+          if (cnt >= CardConfig.cardCollectMinCnt)
+          {
+            idxEnd = i;
+          }
+        }
+        else{
+          idxStart = i+1;
+          cnt = 0;
+        }
+      }
+      if (idxEnd > 0)
+      {
+        return new PIXI.Point(idxStart, idxEnd);
+      }
+      else return null;
+    };
+
+    this.showCollectTip = function(){
+      var surfaceCards = this.getSurfaceArr();
+      var collectInfo = this.canCollect(surfaceCards);
+      this.viewCollectTip.updateDisplay(collectInfo);
+      if (collectInfo)
+      {
+          this.viewCollectTip.x = this.arrCardNode[collectInfo.x][0].x;
       }
     };
 
@@ -245,9 +296,7 @@ function CardParentView(width, height, cardType)
       {
         return;
       }
-
       var surfaceCards = this.getSurfaceArr();
-
       if (cardData.value < 0) {
         for (var i = 0; i < surfaceCards.length; i++) {
           var node = surfaceCards[i];
@@ -271,16 +320,20 @@ function CardParentView(width, height, cardType)
         {
             this.arrCardTip[0].visible = true;
         }
-        else if(tailNode.getData().value < cardData.value)
+        else if(tailNode.getData().value < cardData.value && tailNode.getData().value>0)
         {
             this.arrCardTip[this.arrCardTip.length-1].visible = true;
         }
+        else if(surfaceCards.length==1 && headNode.getData().value < 0)
+        {
+          this.arrCardTip[1].visible = true;
+        }
         else
         {
-          var prevValue = 0;
+          var prevValue = -999;
           for (var i = 0; i < surfaceCards.length; i++) {
             var node = surfaceCards[i];
-            if (node.getData() < 0)//找出 日食月食
+            if (node.getData().value < 0)//找出 日食月食
             {
               if (cardData.value > prevValue)
               {
@@ -291,15 +344,32 @@ function CardParentView(width, height, cardType)
                   if (tmpI >= surfaceCards.length) {
                     break;
                   }
-                  rightNode = surfaceCards[++tmpI];
-                }while(rightNode.getData().value < 0);
-                if(rightNode.getData().value > 0)  rightValue = rightNode.getData().value;
+                  rightNode = surfaceCards[tmpI++];
+                  rightValue = rightNode.getData().value;
+                }while(rightValue < 0);
 
-                if(prevValue < cardData.value && cardData.value < rightValue)
+                if(prevValue < -1 && rightValue == -1)//全部是 食
                 {
-                  for (var j = i; j < tmpI; j++) {
-                    this.arrCardTip[j].visible = true;
+                  for (var i=1; i<=this.arrCardNode.length; i++) {
+                    this.arrCardTip[i].visible = true;
                   }
+                  break;
+                }
+                else if(prevValue < cardData.value && cardData.value < rightValue)//若干食被截断 x000xxx / 000x
+                {
+                  if (prevValue < -1) {//食 开头,只显示离数字最近的tip
+                    this.arrCardTip[tmpI-1].visible = true;
+                  }
+                  else {
+                    for (var j = i+1; j < tmpI; j++) {//夹中间
+                      this.arrCardTip[j].visible = true;
+                    }
+                  }
+                }
+                else if(prevValue < cardData.value && rightValue == -1)//x000
+                {
+                  this.arrCardTip[i+1].visible = true;
+                  break;
                 }
               }
             }

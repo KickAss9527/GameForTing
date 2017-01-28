@@ -3,8 +3,9 @@ function CardTip(width, height)
     PIXI.Graphics.call(this);
     this.width = width;
     this.height = height;
-    this.lineStyle(1, 0xff2222, 1);
-    this.drawRect(0,1, width, height-2);
+    var lineW = 2;
+    this.lineStyle(lineW, 0xff2222, 1);
+    this.drawRect(-lineW*0.5,-lineW*0.5, width+lineW*2, height+lineW*2);
     this.visible = false;
     this.interactive = true;
     var tStyle = {
