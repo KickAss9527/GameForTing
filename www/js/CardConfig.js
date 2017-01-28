@@ -11,6 +11,7 @@ var CardConfig = {
   LblValMarginBtm : 10,
   CardMinValue : 1,
   CardMaxValue : 58*0.5,
+  CardDefaultTag : 1000,
 
   GenerateInitList:function(){
     return this.GenerateRandomList(CardConfig.cardNumCnt+CardConfig.cardCoverCnt);

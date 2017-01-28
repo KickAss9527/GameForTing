@@ -1,7 +1,7 @@
 var GameConfig ={
   sceneWidth : 1440,
   sceneHeight : 960,
-  handCardCnt : 5,
+  handCardCnt : 10,
   ViewTag_OpponentDay : 1,
   ViewTag_OpponentNight : 2,
   ViewTag_PlayerDay : 3,
@@ -76,14 +76,11 @@ Game.prototype = {
   initPlayerCardView : function()
   {
       this.lblReady.parent.removeChild(this.lblReady);
-      this.playerCardView = new PIXI.Container();
-      this.stage.addChild(this.playerCardView);
       var width = GameConfig.sceneWidth-2;
       var height = CardConfig.cardSizeH;
-      this.playerCardView.width = width;
-      this.playerCardView.height = height;
+      this.playerCardView = new CardParentView(width, height, 0);
+
       this.playerCardView.position.set(1,GameConfig.sceneHeight - CardConfig.cardSizeH);
-      this.playerCardView.addChild(this.loadBorderContainer(width, height));
 
 // load btn Discard
       var tStyle = {
@@ -117,6 +114,7 @@ Game.prototype = {
       this.stage.addChild(this.playerNightView);
       this.stage.addChild(this.opponentDayView);
       this.stage.addChild(this.opponentNightView);
+      this.stage.addChild(this.playerCardView);
 
       this.playerNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*2);
       this.playerDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*3);
@@ -133,11 +131,12 @@ Game.prototype = {
       for(var i=0; i<GameConfig.handCardCnt; i++)
       {
         var data = this.cardStack.pop();
-        var card = new Card(data);
-        card.x = i*(card.width+10);
-
-        this.playerCardView.addChild(card);
+        var card = new CardOnBoard(new Card(data));
+        card.tag = i;
+        card.setupCardPlayerEvent(true);
+        this.playerCardView.cardNodeParent.addChild(card);
       }
+      this.refreshPlayerCardsLayout();
       if (this.state == GameState.PrepareFirstHand)
       {
         for(var i=0; i<GameConfig.handCardCnt; i++){this.opponentCardStack.push(this.cardStack.pop());}
@@ -177,14 +176,15 @@ Game.prototype = {
     for (var i = 0; i < parentView.length; i++)
     {
       var targetView = parentView[i];
-      if (targetView.cardType == card.data.dayType &&
+      if (targetView.cardType == card.getData().dayType &&
           center.y <= targetView.y + targetView.height && center.y >= targetView.y)
           //在大队列范围内
       {
-        if (targetView.cardContainer.children.length == 0)
-        {
-          return targetView;
-        }
+          if (targetView.canRecieveCard(card))
+          {
+            console.log("can play the card in this view");
+            return targetView;
+          }
       }
     }
 
@@ -209,6 +209,42 @@ Game.prototype = {
     {
       var targetView = parentView[i];
       targetView.showTip(cardData);
+    }
+  },
+
+  refreshPlayerCardsLayout : function(){
+    this.refreshCardsLayout(this.playerCardView.cardNodeParent);
+  },
+
+  refreshCardsLayout : function(cardParentView)//根据tag排序，计算坐标
+  {
+    var nodes = cardParentView.children;
+    var tmpNodes = new Array();
+    var tagArr = new Array();
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (tagArr.indexOf(node.tag) < 0 && node.getData()!= null)
+      {
+        tmpNodes.push(node);
+        tagArr.push(node.tag);
+      }
+    }
+
+    tmpNodes.sort(function(a,b){return a.tag - b.tag;});
+
+    var cnt = tmpNodes.length;
+    if (cnt == 0) return;
+    var cardW = tmpNodes[0].width;
+    var space = 10;
+    var tag0 = tagArr[0];
+    var x = 0.5*(GameConfig.sceneWidth - cnt*cardW - (tagArr.length-1)*space);
+    for (var i = 0; i < cnt; i++) {
+      var node = tmpNodes[i];
+      var newPos = new PIXI.Point(x + (tagArr.indexOf(node.tag) - tagArr.indexOf(tag0))*(space + cardW), node.y);
+      var tween = PIXI.tweenManager.createTween(node);
+      tween.time = 100;
+      tween.to(newPos);
+      tween.start();
     }
   }
 };
