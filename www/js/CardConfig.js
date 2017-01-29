@@ -5,7 +5,7 @@ var CardConfig = {
   cardSizeW : 100,
   cardSizeH : 100*1.7,
   cardSpaceBetween : 8,
-  cardCollectMinCnt : 5,
+  cardCollectMinCnt : 2,
   Type_Day : 1,
   Type_Night : 2,
   BgColor_Day : 0xf5f5d2,

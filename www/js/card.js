@@ -81,7 +81,7 @@ function Card(data){
 }
 Card.prototype = Object.create(PIXI.Container.prototype);
 
-function CollectTipView()
+function CollectTipView(manager)
 {
   PIXI.Graphics.call(this);
   var tStyle = {
@@ -93,8 +93,9 @@ function CollectTipView()
   this.lblReady.anchor.set(0.5,0.5);
   this.addChild(this.lblReady);
   this.visible = false;
-  this.lineStyle(2, 0x11FF11, 1);
+
   this.collectInfo = null;
+  this.manager = manager;
 
   this.updateDisplay = function(idxRange)
   {
@@ -105,6 +106,8 @@ function CollectTipView()
       var cardCnt = idxRange.y - idxRange.x + 1;
       var width = cardCnt*CardConfig.cardSizeW + (cardCnt-1)*CardConfig.cardSpaceBetween;
       var height = CardConfig.cardSizeH;
+      this.clear();
+      this.lineStyle(2, 0x11FF11, 1);
       this.beginFill(0x33FF33, 0.05);
       this.drawRect(0, 0, width, height);
       this.endFill();
@@ -118,6 +121,8 @@ function CollectTipView()
     }
   };
 
-  this.on('click', function(){console.log("enen");});
+  this.on('click', function(){
+    this.manager.collect();
+  });
 
 }CollectTipView.prototype = Object.create(PIXI.Graphics.prototype);

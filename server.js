@@ -15,17 +15,23 @@ io.on('connection', function(socket) {
 
     //接收并处理客户端发送的foo事件
     socket.on(ServerConfig.Msg_Login, function(data) {
+      if (iUserLogin >= 2) {
+        arrUsers = {};
+        iUserLogin = 0;
+        console.log("new");
+      }
         arrUsers[iUserLogin] = data;
         console.log(arrUsers[iUserLogin] + ' login ~');
         iUserLogin++;
         socket.join(ServerConfig.Ser_Room);
-        if (iUserLogin >= 1)
+        if (iUserLogin%2 == 0)
         {
-          console.log('server : game start');
+          console.log('server : game start, first : '+arrUsers[0]);
           var randomList = CardConfig.GenerateInitList();
           var msg = [randomList, arrUsers[0]];
           io.sockets.in(ServerConfig.Ser_Room).emit(ServerConfig.Msg_GameStart, msg);
         }
-
-    })
+    }).on(ServerConfig.Game_PlayCard, function(data){
+      socket.broadcast.to(ServerConfig.Ser_Room).emit(ServerConfig.Game_PlayCard, data);
+    });
 });

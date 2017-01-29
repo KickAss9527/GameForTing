@@ -17,7 +17,7 @@ function CardParentView(width, height, cardType)
     this.cardTipParent.width = this.cardNodeParent.width = width;
     this.cardTipParent.height = this.cardNodeParent.height = height;
 
-    this.viewCollectTip = new CollectTipView();
+    this.viewCollectTip = new CollectTipView(this);
     this.addChild(this.viewCollectTip);
 
     this.tag = 0;
@@ -71,12 +71,37 @@ function CardParentView(width, height, cardType)
           tween.time = 300;
           tween.to({"x":pos.x, "y":pos.y});
           tween.start();
-          if (j == arr.length - 1) {
+          if (j == arr.length - 1 && i == this.arrCardNode.length-1) {
             var that = this;
-            tween.on('end', function(){that.showCollectTip();});
+            tween.on('end', function(){});
           }
         }
       }
+    };
+
+    this.refreshCardTipsLayout = function()
+    {
+      var cardW = CardConfig.cardSizeW;
+      var cnt = this.arrCardTip.length;
+
+      var x = 0.5*this.width - 0.5*(cnt*cardW + (cnt-1)*CardConfig.cardSpaceBetween);
+
+      for (var i = 0; i < cnt; i++) {
+        var node = this.arrCardTip[i];
+        var newPos = new PIXI.Point(x + i*(CardConfig.cardSpaceBetween + cardW), 0);
+        node.x = newPos.x;
+      }
+    };
+
+    this.dropAllCards = function()
+    {
+      var cards = this.cardNodeParent.children.concat();
+      this.cardNodeParent.removeChildren();
+      this.cardTipParent.removeChildren();
+      this.arrCardTip = new Array();
+      this.arrCardNode = new Array();
+      this.prepareNextCards();
+      return cards;
     };
 
     this.prepareNextCards = function()
@@ -91,27 +116,60 @@ function CardParentView(width, height, cardType)
           this.loadCardTip();
         };
       }
-      var cardW = CardConfig.cardSizeW;
-      var cnt = this.arrCardTip.length;
-
-      var x = 0.5*this.width - 0.5*(cnt*cardW + (cnt-1)*CardConfig.cardSpaceBetween);
-
-      for (var i = 0; i < cnt; i++) {
-        var node = this.arrCardTip[i];
-        var newPos = new PIXI.Point(x + i*(CardConfig.cardSpaceBetween + cardW), 0);
-        node.x = newPos.x;
-      }
+      this.refreshCardTipsLayout();
     };
     if(this.cardType > 0) this.prepareNextCards();
+
+    this.collect = function()
+    {
+      var info = this.viewCollectTip.collectInfo;
+      console.log(info);
+      var score = 0;
+      for (var i = info.x; i <= info.y; i++)
+      {
+        var arr = this.arrCardNode[i];
+        for (var j = 0; j < arr.length; j++) {
+          var card = arr[j];
+          card.parent.removeChild(card);
+          if(card.getData().value > 0) score++;
+        }
+      }
+      this.arrCardNode.splice(info.x, info.y-info.x + 1);
+      var leftTipCnt = 0;
+      if(this.arrCardNode.length==0) leftTipCnt = 1;
+      else leftTipCnt = this.arrCardNode.length+2;
+      for (var i = this.arrCardTip.length-1; i >= leftTipCnt; i--)
+      {
+        var tip = this.arrCardTip[i];
+        tip.parent.removeChild(tip);
+      }
+      this.arrCardTip = new Array();
+      for (var i = 0; i < this.cardTipParent.children.length; i++) {
+        this.arrCardTip.push(this.cardTipParent.children[i]);
+      }
+      this.refreshCardTipsLayout();
+      this.refreshCardsLayout();
+      this.viewCollectTip.updateDisplay(null);
+    }
+
+    this.recieveCardFromOpponent = function(card, idx)
+    {
+      var tipNode = this.arrCardTip[idx];
+      this.addCard(card,new PIXI.Point(this.width*0.5, -this.y-130), idx);
+      this.prepareNextCards();
+      this.refreshCardsLayout();
+    };
 
     this.recieveCard = function(card)
     {
       var pos = this.getPlayerCardLocalPos(card);
       var tipNode = this.getMatchedCardNode(new PIXI.Point(pos.x + card.width*0.5, pos.y + card.height*0.5));
       console.log(tipNode);
-      this.addCard(card,pos,this.arrCardTip.indexOf(tipNode));//加入新的view
+      var idx = this.arrCardTip.indexOf(tipNode);
+      this.addCard(card,pos,idx);//加入新的view
       this.prepareNextCards();
       this.refreshCardsLayout();
+      gameInstance.playCard(card.getData(), this.tag, idx);
     };
 
     this.addCard = function(card, pos, idx)//加入node，但card作为子节点保持当前位置，之后用动画位移
@@ -126,7 +184,6 @@ function CardParentView(width, height, cardType)
 
       var head = this.getHeadNode();
       if(head) idx--;
-
       if (idx >= this.arrCardNode.length ) {
         this.arrCardNode.splice(idx, 0, new Array());
       }
@@ -135,13 +192,10 @@ function CardParentView(width, height, cardType)
         idx = 0;
         this.arrCardNode.splice(0, 0, new Array());
       }
-      else
-      {
 
-      }
       var arr = this.arrCardNode[idx];
-      console.log(idx+"_"+arr);
       arr.push(card);
+      console.log(idx+"_"+arr);
     };
 
     this.getHeadNode = function()
@@ -253,28 +307,34 @@ function CardParentView(width, height, cardType)
     this.canCollect = function(surfaceCards)
     {
       var cnt = 0;
-      var idxStart=0;
-      var idxEnd = 0;
-
+      var idxStart = -1;
+      var idxEnd = -1;
+      var res = new PIXI.Point(-1, -1);
       for (var i = 0; i < surfaceCards.length; i++)
       {
         var card = surfaceCards[i];
         if (card.getData().value > 0)
         {
+          if (res.x < 0) {
+            res.x = i;
+          }
           cnt++;
           if (cnt >= CardConfig.cardCollectMinCnt)
           {
-            idxEnd = i;
+            res.y = i;
           }
         }
-        else{
-          idxStart = i+1;
+        else {
+          if (res.y > 0)
+          {
+            return res;
+          }
           cnt = 0;
         }
       }
-      if (idxEnd > 0)
+      if (res.y > 0)
       {
-        return new PIXI.Point(idxStart, idxEnd);
+        return res;
       }
       else return null;
     };

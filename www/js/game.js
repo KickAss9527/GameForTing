@@ -35,10 +35,11 @@ function Game(){
   this.opponentDayView = null;
   this.opponentNightView = null;
   this.cardStack = null;
-  this.cardStack_Discard = null;
+  this.cardStack_Discard = new Array();
   this.cardRandomList = null;
   this.opponentCardStack = null;
   this.btnDiscard = null;
+  this.lblTurnInfo = null;
 };
 
 Game.prototype = {
@@ -81,7 +82,6 @@ Game.prototype = {
       var width = GameConfig.sceneWidth-2;
       var height = CardConfig.cardSizeH;
       this.playerCardView = new CardParentView(width, height, 0);
-
       this.playerCardView.position.set(1,GameConfig.sceneHeight - CardConfig.cardSizeH);
 
 // load btn Discard
@@ -95,8 +95,15 @@ Game.prototype = {
       this.btnDiscard.anchor.set(0.5,0.5);
       this.btnDiscard.position.set(50, -20);
       this.btnDiscard.interactive = true;
+      var that = this;
       var discardEvt = function(){
-        alert();
+        console.log(that.cardStack_Discard);
+        that.cardStack_Discard = that.cardStack_Discard.concat(that.playerNightView.dropAllCards())
+        that.cardStack_Discard = that.cardStack_Discard.concat(that.playerDayView.dropAllCards());
+        that.cardStack_Discard = that.cardStack_Discard.concat(that.playerCardView.cardNodeParent.children);
+        that.playerCardView.cardNodeParent.removeChildren();
+
+        console.log("discard cnt : " + that.cardStack_Discard.length);
       };
       this.btnDiscard.on('click', discardEvt);
       this.btnDiscard.on('tap', discardEvt);
@@ -126,26 +133,25 @@ Game.prototype = {
 //load initial cardsprite
       console.log("stack count : %d", this.cardStack.length);
       this.opponentCardStack = new Array();
+      this.lblTurnInfo = new PIXI.Text("TurnInfo",tStyle);
+      this.lblTurnInfo.position.set(50, 20);
+      this.stage.addChild(this.lblTurnInfo);
+
       if (this.state == GameState.PrepareSecondHand)
       {
+        this.lblTurnInfo.text = this.connector.userId + " _ Opponent Turn";
         for(var i=0; i<GameConfig.handCardCnt; i++){this.opponentCardStack.push(this.cardStack.pop());}
       }
       for(var i=0; i<GameConfig.handCardCnt; i++)
       {
-        var data = this.cardStack.pop();
-        data.value = i+1;
-        data.dayType = 1;
-        if (i%3==0) {
-          data.value = -1;
-        }
-        var card = new CardOnBoard(new Card(data));
-        card.tag = i;
+        var card = this.cardStack.pop();
         card.setupCardPlayerEvent(true);
         this.playerCardView.cardNodeParent.addChild(card);
       }
       this.refreshPlayerCardsLayout();
       if (this.state == GameState.PrepareFirstHand)
       {
+        this.lblTurnInfo.text = this.connector.userId + " _ Your Turn";
         for(var i=0; i<GameConfig.handCardCnt; i++){this.opponentCardStack.push(this.cardStack.pop());}
       }
   },
@@ -155,12 +161,12 @@ Game.prototype = {
     this.cardStack = new Array();
     for (var i = 1; i <= CardConfig.cardNumCnt*0.5; i++)
     {
-      this.cardStack.push(new CardData(CardConfig.Type_Day, i));
-      this.cardStack.push(new CardData(CardConfig.Type_Night, i));
+      this.cardStack.push(new CardOnBoard(new Card(new CardData(CardConfig.Type_Day, i))));
+      this.cardStack.push(new CardOnBoard(new Card(new CardData(CardConfig.Type_Night, i))));
     }
     for (var i = 0; i < CardConfig.cardCoverCnt*0.5; i++) {
-      this.cardStack.push(new CardData(CardConfig.Type_Day, -1));
-      this.cardStack.push(new CardData(CardConfig.Type_Night, -1));
+      this.cardStack.push(new CardOnBoard(new Card(new CardData(CardConfig.Type_Day, -1))));
+      this.cardStack.push(new CardOnBoard(new Card(new CardData(CardConfig.Type_Night, -1))));
     }
   },
 
@@ -221,47 +227,90 @@ Game.prototype = {
 
   showWaitingTip : function()
   {
-    // if (this.state == GameState.PlayerTurn) {
-        this.playerDayView.showCollectTip();
-        this.playerNightView.showCollectTip();
-    // }
+      this.playerDayView.showCollectTip();
+      this.playerNightView.showCollectTip();
   },
 
-  refreshPlayerCardsLayout : function(){
-    this.refreshCardsLayout(this.playerCardView.cardNodeParent);
-  },
-
-  refreshCardsLayout : function(cardParentView)//根据tag排序，计算坐标
+  refreshPlayerCardsLayout : function()
   {
-    var nodes = cardParentView.children;
-    var tmpNodes = new Array();
-    var tagArr = new Array();
-    for (var i = 0; i < nodes.length; i++) {
-      var node = nodes[i];
-      if (tagArr.indexOf(node.tag) < 0 && node.getData()!= null)
-      {
-        tmpNodes.push(node);
-        tagArr.push(node.tag);
-      }
-    }
+    var nodes = this.playerCardView.cardNodeParent.children;
+    nodes.sort(function(a,b){
+      return (a.getData().value + a.getData().dayType*100) - (b.getData().value + b.getData().dayType*100);
+    });
 
-    tmpNodes.sort(function(a,b){return a.tag - b.tag;});
-
-    var cnt = tmpNodes.length;
+    var cnt = nodes.length;
     if (cnt == 0) return;
-    var cardW = tmpNodes[0].width;
+    var cardW = nodes[0].width;
     var space = 10;
-    var tag0 = tagArr[0];
-    var x = 0.5*(GameConfig.sceneWidth - cnt*cardW - (tagArr.length-1)*space);
+
+    var x = 0.5*(GameConfig.sceneWidth - cnt*cardW - (cnt-1)*space);
     for (var i = 0; i < cnt; i++) {
-      var node = tmpNodes[i];
-      var newPos = new PIXI.Point(x + (tagArr.indexOf(node.tag) - tagArr.indexOf(tag0))*(space + cardW), node.y);
+      var node = nodes[i];
+      var newPos = new PIXI.Point(x + i*(space + cardW), node.y);
       var tween = PIXI.tweenManager.createTween(node);
       tween.time = 100;
       tween.to(newPos);
       tween.start();
     }
+  },
+
+  opponentPlayCard : function(data)
+  {
+    var cardData = data[0];
+    var tag = data[1];
+    var idx = data[2];
+
+    var targetView = null;
+    if (tag == GameConfig.ViewTag_OpponentDay) targetView = this.playerDayView;
+    else if (tag == GameConfig.ViewTag_OpponentNight) targetView = this.playerNightView;
+    else if (tag == GameConfig.ViewTag_PlayerDay) targetView = this.opponentDayView;
+    else if (tag == GameConfig.ViewTag_PlayerNight) targetView = this.opponentNightView;
+
+    var targetCard = null;
+    for (var i = 0; i < this.opponentCardStack.length; i++) {
+      var card = this.opponentCardStack[i];
+      if (card.getData().value == cardData.value &&
+          card.getData().dayType == cardData.dayType) {
+        targetCard = card;
+        this.opponentCardStack.slice(i, 1);
+        break;
+      }
+    }
+
+    targetView.recieveCardFromOpponent(targetCard, idx);
+
+    if (!targetCard.getData().hasBug()) {
+      this.state = GameState.PlayerTurn;
+    }
+  },
+
+  playCard : function(cardData, viewTag, idx){
+    this.connector.playCard(cardData, viewTag, idx);
+    if (cardData.hasBug())
+    {
+        //continue
+    }
+    else
+    {
+      this.state = GameState.OpponentTurn;
+    }
+  },
+
+  updateTurnInfo : function(){
+    var text = this.state == GameState.PlayerTurn ? "_ Your Turn Now!!!" : "_ Opponent Turn..."
+    this.lblTurnInfo.text = this.connector.userId + text;
+  },
+
+  setupPlayerControl : function(flgEnable)
+  {
+    this.btnDiscard.interactive = flgEnable;
+    var cards = this.playerCardView.cardNodeParent.children;
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i]
+      card.interactive = flgEnable;
+    }
   }
+
 };
 
 var gameInstance = new Game();
@@ -286,18 +335,22 @@ function animate() {
         gameInstance.InitCardStack();
         gameInstance.randomCardStack();
         gameInstance.initPlayerCardView();
-        //发牌
-        gameInstance.state = gameInstance==GameState.PrepareFirstHand ? GameState.PlayerTurn : GameState.OpponentTurn;
+        gameInstance.setupPlayerControl(false);
+        gameInstance.state = gameInstance.state==GameState.PrepareFirstHand ? GameState.PlayerTurn : GameState.OpponentTurn;
       }break;
       case GameState.PlayerTurn:
       {
-        // gameInstance.showCollectTip();
-        gameInstance.state = PlayerTurnWaiting;
+        gameInstance.setupPlayerControl(true);
+        gameInstance.showWaitingTip();
+        gameInstance.updateTurnInfo();
+        gameInstance.state = GameState.PlayerTurnWaiting;
       }break;
       case GameState.PlayerTurnWaiting:{}break;
       case GameState.OpponentTurn:
       {
-
+        gameInstance.setupPlayerControl(false);
+        gameInstance.updateTurnInfo();
+        gameInstance.state = GameState.OpponentTurnWaiting;
       }break;
       case gameInstance.OpponentTurnWaiting:{}break;
       default:break;
