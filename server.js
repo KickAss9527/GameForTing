@@ -7,7 +7,7 @@ server.listen(8888);
 
 var CardConfig = require('./www/js/CardConfig.js');
 var ServerConfig = require('./www/js/conn.js');
-console.log('server started');
+console.log('server start!!!');
 
 var iUserLogin = 0;
 var arrUsers = {};
@@ -33,5 +33,27 @@ io.on('connection', function(socket) {
         }
     }).on(ServerConfig.Game_PlayCard, function(data){
       socket.broadcast.to(ServerConfig.Ser_Room).emit(ServerConfig.Game_PlayCard, data);
+    }).on(ServerConfig.Game_Discard, function(data){
+      console.log(data);
+      if (data[0])
+      {
+          var randList = CardConfig.GenerateRandomList(data[0]);
+          data[0] = randList;
+          console.log(randList);
+      }
+      else data = null;
+      io.sockets.in(ServerConfig.Ser_Room).emit(ServerConfig.Game_Discard, data);
+    }).on(ServerConfig.Game_Collect, function(data){
+      socket.broadcast.to(ServerConfig.Ser_Room).emit(ServerConfig.Game_Collect, data);
+    }).on(ServerConfig.Game_MoreCards, function(data){
+      console.log(data);
+      if (data[0])
+      {
+          var randList = CardConfig.GenerateRandomList(data[0]);
+          data[0] = randList;
+          console.log(randList);
+      }
+      else data = null;
+      io.sockets.in(ServerConfig.Ser_Room).emit(ServerConfig.Game_MoreCards, data);
     });
 });

@@ -65,10 +65,15 @@ function CardParentView(width, height, cardType)
       for (var i = 0; i < this.arrCardNode.length; i++) {
         var arr = this.arrCardNode[i];
         var pos = this.arrCardTip[i+1].position;
+        console.log(pos);
         for (var j = 0; j < arr.length; j++) {
           var card = arr[j];
           var tween = PIXI.tweenManager.createTween(card);
           tween.time = 300;
+          if(this.arrCardNode.length == 1 && pos.x < 669)
+          {
+            console.log("????");
+          }
           tween.to({"x":pos.x, "y":pos.y});
           tween.start();
           if (j == arr.length - 1 && i == this.arrCardNode.length-1) {
@@ -96,11 +101,18 @@ function CardParentView(width, height, cardType)
     this.dropAllCards = function()
     {
       var cards = this.cardNodeParent.children.concat();
+      for (var i = 0; i < this.cardNodeParent.length; i++) {
+        var card = this.cardNodeParent[i];
+        card.setupCardPlayerEvent(false);
+      }
       this.cardNodeParent.removeChildren();
       this.cardTipParent.removeChildren();
       this.arrCardTip = new Array();
       this.arrCardNode = new Array();
-      this.prepareNextCards();
+      if (this.cardType > 0) {
+        this.prepareNextCards();
+      }
+
       return cards;
     };
 
@@ -120,10 +132,15 @@ function CardParentView(width, height, cardType)
     };
     if(this.cardType > 0) this.prepareNextCards();
 
-    this.collect = function()
+    this.evtCollect = function()
     {
       var info = this.viewCollectTip.collectInfo;
       console.log(info);
+      var score = this.collect(info);
+      gameInstance.playerCollect(this.tag, info, score);
+    }
+
+    this.collect = function(info){
       var score = 0;
       for (var i = info.x; i <= info.y; i++)
       {
@@ -149,7 +166,8 @@ function CardParentView(width, height, cardType)
       }
       this.refreshCardTipsLayout();
       this.refreshCardsLayout();
-      this.viewCollectTip.updateDisplay(null);
+      this.hideCollectTip();
+      return score;
     }
 
     this.recieveCardFromOpponent = function(card, idx)
@@ -270,7 +288,10 @@ function CardParentView(width, height, cardType)
 
     this.canShowTip = function(cardData)
     {
-      if(cardData.dayType == CardConfig.Type_Night)
+      if (!cardData) {
+        return true;
+      }
+      else if(cardData.dayType == CardConfig.Type_Night)
       {
         if (this.tag == GameConfig.ViewTag_PlayerNight || this.tag == GameConfig.ViewTag_OpponentNight)
         {
@@ -297,11 +318,21 @@ function CardParentView(width, height, cardType)
         return;
       }
       console.log("card parent view hide tip");
-      this.viewCollectTip.updateDisplay(null);
+      this.hideCollectTip();
+      this.hidePlayCardTip();
+    };
+
+    this.hidePlayCardTip = function(cardData)
+    {
       for (var i = 0; i < this.cardTipParent.children.length; i++) {
         var node = this.cardTipParent.children[i];
         node.visible = false;
       }
+    };
+
+    this.hideCollectTip = function()
+    {
+      this.viewCollectTip.updateDisplay(null);
     };
 
     this.canCollect = function(surfaceCards)
@@ -349,7 +380,13 @@ function CardParentView(width, height, cardType)
       }
     };
 
-    this.showTip = function(cardData)
+    this.checkCanCollet = function()
+    {
+      var surfaceCards = this.getSurfaceArr();
+      return this.canCollect(surfaceCards)!=null;
+    };
+
+    this.showPlayCardTip = function(cardData)
     {
       // console.log(this.tag+"--"+cardData.dayType);
       if (!this.canShowTip(cardData))

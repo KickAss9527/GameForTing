@@ -1,7 +1,7 @@
 var GameConfig ={
   sceneWidth : 1440,
   sceneHeight : 960,
-  handCardCnt : 10,
+  handCardCnt : 5,
   ViewTag_OpponentDay : 1,
   ViewTag_OpponentNight : 2,
   ViewTag_PlayerDay : 3,
@@ -17,8 +17,10 @@ var GameState = {
   OpponentTurn : 4,
   CommunicateToServer : 5,
   Init : 6,
-  PlayerTurnWaiting : 7,
-  OpponentTurnWaiting : 8
+  PlayerTurnThinking : 7,
+  OpponentTurnThinking : 8,
+  GameEndStart : 9,
+  GameEndComplete : 10
 }
 
 function Game(){
@@ -29,6 +31,7 @@ function Game(){
   this.connector.init();
   this.stage = new PIXI.Container();
   this.lblReady = null;
+  this.scores = new Array(0, 0);
   this.playerCardView = null;
   this.playerDayView = null;
   this.playerNightView = null;
@@ -40,12 +43,16 @@ function Game(){
   this.opponentCardStack = null;
   this.btnDiscard = null;
   this.lblTurnInfo = null;
+  this.lblEndInfo = null;
+  this.askForMoreCardsCallback = null;
+  this.fLastAction = false;
 };
 
 Game.prototype = {
   evtReady : function(evt)
   {
     gameInstance.lblReady.text = "Waiting...";
+    gameInstance.lblReady.interactive = false;
     gameInstance.connector.playerReady();
   },
 
@@ -98,11 +105,7 @@ Game.prototype = {
       var that = this;
       var discardEvt = function(){
         console.log(that.cardStack_Discard);
-        that.cardStack_Discard = that.cardStack_Discard.concat(that.playerNightView.dropAllCards())
-        that.cardStack_Discard = that.cardStack_Discard.concat(that.playerDayView.dropAllCards());
-        that.cardStack_Discard = that.cardStack_Discard.concat(that.playerCardView.cardNodeParent.children);
-        that.playerCardView.cardNodeParent.removeChildren();
-
+        that.discardCards();
         console.log("discard cnt : " + that.cardStack_Discard.length);
       };
       this.btnDiscard.on('click', discardEvt);
@@ -134,8 +137,13 @@ Game.prototype = {
       console.log("stack count : %d", this.cardStack.length);
       this.opponentCardStack = new Array();
       this.lblTurnInfo = new PIXI.Text("TurnInfo",tStyle);
-      this.lblTurnInfo.position.set(50, 20);
+      this.lblTurnInfo.position.set(20, 20);
       this.stage.addChild(this.lblTurnInfo);
+
+      this.lblEndInfo = new PIXI.Text("", tStyle);
+      this.lblEndInfo.position.set(GameConfig.sceneWidth-10, 25);
+      this.lblEndInfo.anchor.set(1, 0);
+      this.stage.addChild(this.lblEndInfo);
 
       if (this.state == GameState.PrepareSecondHand)
       {
@@ -173,6 +181,7 @@ Game.prototype = {
   randomCardStack : function()
   {
     var newCardStack = new Array();
+    this.sortCards(this.cardStack);
     for (var i = 0; i < this.cardStack.length; i++)
     {
       newCardStack.push(this.cardStack[this.cardRandomList[i]]);
@@ -204,24 +213,34 @@ Game.prototype = {
     return null;
   },
 
-  hideTip : function(cardData)
+  hidePlayCardTip : function(cardData)
   {
     var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
     for (var i = 0; i < parentView.length; i++)
     {
       var targetView = parentView[i];
-      targetView.hideTip(cardData);
+      targetView.hidePlayCardTip(cardData);
     }
   },
 
-  showTip : function(cardData)
+  hideCollectTip : function()
+  {
+    var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
+    for (var i = 0; i < parentView.length; i++)
+    {
+      var targetView = parentView[i];
+      targetView.hideCollectTip();
+    }
+  },
+
+  showPlayCardTip : function(cardData)
   {
     //检查 collect
     var parentView = new Array(this.playerNightView, this.playerDayView, this.opponentDayView,this.opponentNightView);
     for (var i = 0; i < parentView.length; i++)
     {
       var targetView = parentView[i];
-      targetView.showTip(cardData);
+      targetView.showPlayCardTip(cardData);
     }
   },
 
@@ -231,13 +250,16 @@ Game.prototype = {
       this.playerNightView.showCollectTip();
   },
 
+  sortCards : function(cards){
+    cards.sort(function(a,b){
+      return (a.getData().value + a.getData().dayType*100) - (b.getData().value + b.getData().dayType*100);
+    });
+  },
+
   refreshPlayerCardsLayout : function()
   {
     var nodes = this.playerCardView.cardNodeParent.children;
-    nodes.sort(function(a,b){
-      return (a.getData().value + a.getData().dayType*100) - (b.getData().value + b.getData().dayType*100);
-    });
-
+    this.sortCards(nodes);
     var cnt = nodes.length;
     if (cnt == 0) return;
     var cardW = nodes[0].width;
@@ -272,23 +294,69 @@ Game.prototype = {
       if (card.getData().value == cardData.value &&
           card.getData().dayType == cardData.dayType) {
         targetCard = card;
-        this.opponentCardStack.slice(i, 1);
+        this.opponentCardStack.splice(i, 1);
         break;
       }
     }
-
+    if(!targetCard) {
+      console.log("?");
+    }
     targetView.recieveCardFromOpponent(targetCard, idx);
+    this.updateEndInfo();
 
-    if (!targetCard.getData().hasBug()) {
+    if (targetCard.getData().hasBug()) {
+      if (!this.canAskForMoreCards() && this.opponentCardStack.length == 0) {
+        this.state = GameState.PlayerTurn;
+        return;
+      }
+    }
+    else if(this.opponentCardStack.length == 0)
+    {
+      if (!this.canAskForMoreCards()) {
+        this.state = GameState.PlayerTurn;
+        return;
+      }
+      this.askForMoreCardsCallback = function(){
+        this.state = GameState.PlayerTurn;
+      };
+    }
+    else {
       this.state = GameState.PlayerTurn;
     }
   },
 
   playCard : function(cardData, viewTag, idx){
+    this.updateEndInfo();
+    this.hideCollectTip();
     this.connector.playCard(cardData, viewTag, idx);
     if (cardData.hasBug())
     {
+        if (!this.canAskForMoreCards() && this.playerCardView.cardNodeParent.children.length == 0) {
+          this.state = GameState.OpponentTurn;
+          return;
+        }
         //continue
+        if(this.playerCardView.cardNodeParent.children.length == 0)
+        {
+          this.askForMoreCardsCallback = null;
+          this.askForMoreCards();
+        }
+    }
+    else if(this.playerCardView.cardNodeParent.children.length == 0)
+    {
+      if (!this.canAskForMoreCards() && this.playerCardView.cardNodeParent.children.length == 0) {
+        this.state = GameState.OpponentTurn;
+        return;
+      }
+      this.askForMoreCardsCallback = function(){
+        if (gameInstance.state == GameState.OpponentTurnThinking) {
+          gameInstance.state = GameState.PlayerTurn;
+        }
+        else{
+          gameInstance.state = GameState.OpponentTurn;
+        }
+      };
+      this.askForMoreCards();
     }
     else
     {
@@ -296,9 +364,162 @@ Game.prototype = {
     }
   },
 
+  canAskForMoreCards : function(){
+    return this.cardStack.length + this.cardStack_Discard.length > 0;
+  },
+  askForMoreCards : function(){
+    var left = this.cardStack.length - GameConfig.handCardCnt;
+    if (left >= 0 || this.cardStack_Discard == 0) this.connector.askForMoreCards(null);
+    else this.connector.askForMoreCards(this.cardStack_Discard.length);
+
+  },
+  recieveAskForMoreCardsMsg : function(data)
+  {
+    var cards;
+    var left = this.cardStack.length - GameConfig.handCardCnt;
+    if (this.state == GameState.OpponentTurnThinking)
+    {
+      if(left >= 0 || this.cardStack_Discard.length == 0)
+      {
+        cards = this.cardStack.splice(this.cardStack.length-GameConfig.handCardCnt, GameConfig.handCardCnt);
+        this.opponentCardStack = cards;
+      }
+      else {
+        left *= -1;
+        this.opponentCardStack = this.cardStack;
+        this.cardStack = this.cardStack_Discard;
+        this.cardStack_Discard = new Array();
+        if (!data) alert("drop card !error");
+        this.cardRandomList = data[0];
+        this.randomCardStack();
+        var more = this.cardStack.splice(this.cardStack.length-left, left);
+        this.opponentCardStack = this.opponentCardStack.concat(more);
+        for (var i = 0; i < this.opponentCardStack.length; i++) {
+          var card = this.opponentCardStack[i];
+          console.log(card.getData().value);
+        }
+      }
+    }
+    else
+    {
+      if (left >= 0 || this.cardStack_Discard.length == 0)
+      {
+        cards = this.cardStack.splice(this.cardStack.length-GameConfig.handCardCnt, GameConfig.handCardCnt);
+      }
+      else
+      {
+        left *= -1;
+        cards = this.cardStack;
+        this.cardStack = this.cardStack_Discard;
+        this.cardStack_Discard = new Array();
+        if (!data[0]) alert("drop card !error");
+        this.cardRandomList = data[0];
+        this.randomCardStack();
+        var more = this.cardStack.splice(this.cardStack.length-left, left);
+        cards = cards.concat(more);
+      }
+      for (var i = 0; i < cards.length; i++) {
+        var card = cards[i];
+        card.setupCardPlayerEvent(true);
+        this.playerCardView.cardNodeParent.addChild(card);
+      }
+    }
+
+    this.hideCollectTip();
+    this.refreshPlayerCardsLayout();
+    this.updateEndInfo();
+
+    if (this.askForMoreCardsCallback) {
+      this.askForMoreCardsCallback();
+      this.askForMoreCardsCallback = null;
+    }
+  },
+
+  updateEndInfo : function()
+  {
+    var cnt = this.cardStack.length + this.cardStack_Discard.length;
+    if (cnt == 0)
+    {
+      this.lblEndInfo.text = "No cards left, opponent has " + this.opponentCardStack.length + " cards";
+    }
+    else
+    {
+      this.lblEndInfo.text = cnt + " cards total left";
+    }
+  },
+
+  recieveDiscard : function(data)
+  {
+    if (this.state == GameState.OpponentTurnThinking)
+    {
+      //弃对手牌
+      var cards = new Array();
+      cards = cards.concat(this.opponentDayView.dropAllCards())
+      cards = cards.concat(this.opponentNightView.dropAllCards());
+      cards = cards.concat(this.opponentCardStack);
+
+      //添加进弃牌堆
+      this.cardStack_Discard = this.cardStack_Discard.concat(cards);
+      this.askForMoreCardsCallback = function(){this.state = GameState.PlayerTurn;};
+    }
+    else
+    {
+      this.askForMoreCardsCallback = function(){this.state = GameState.OpponentTurn;};
+    }
+    this.recieveAskForMoreCardsMsg(data);
+
+  },
+  discardCards : function()
+  {
+    var left = this.cardStack.length - GameConfig.handCardCnt;
+    var cards = new Array();
+    //手牌，打出去的牌
+    cards = cards.concat(this.playerNightView.dropAllCards());
+    cards = cards.concat(this.playerDayView.dropAllCards());
+    cards = cards.concat(this.playerCardView.dropAllCards());
+    //添加进弃牌堆
+    this.cardStack_Discard = cards.concat(this.cardStack_Discard);
+    //如果牌堆不够，向服务器请求 新的随机顺序，给弃牌堆洗牌
+    if (left >= 0 || this.cardStack_Discard == 0) this.connector.discardCards(null);
+    else this.connector.discardCards(this.cardStack_Discard.length);
+
+  },
+
+  playerCollect : function(tag, info, score)
+  {
+    this.connector.collect(tag, info);
+    this.addScoreToPlayer(true, score);
+    this.updateTurnInfo();
+    this.hideCollectTip();
+    this.state = GameState.OpponentTurn;
+  },
+
+  recieveCollectMsg : function(data)
+  {
+    var tag = data[0];
+    var info = data[1];
+    var targetView = null;
+    if (tag == GameConfig.ViewTag_PlayerDay) targetView = this.opponentDayView;
+    else if (tag == GameConfig.ViewTag_PlayerNight) targetView = this.opponentNightView;
+    var score = targetView.collect(info);
+    this.addScoreToPlayer(false, score);
+    this.updateTurnInfo();
+    this.state = GameState.PlayerTurn;
+
+  },
+
+  addScoreToPlayer : function(flgPlayer, score)
+  {
+    this.scores[flgPlayer?0:1] += score*10;
+  },
+
   updateTurnInfo : function(){
-    var text = this.state == GameState.PlayerTurn ? "_ Your Turn Now!!!" : "_ Opponent Turn..."
-    this.lblTurnInfo.text = this.connector.userId + text;
+    var text = "";
+    text += this.connector.userId.substring(19, 24) + " | ";
+    text += this.state == GameState.PlayerTurn ? " Your Turn Now!!!" : " Opponent Turn..."
+    text += " | Cards Left : " + this.cardStack.length + "; Cards Discard : " + this.cardStack_Discard.length;
+    text += ";   Score: " + this.scores[0] + " : " + this.scores[1] + " ** ";
+    this.lblTurnInfo.text = text;
   },
 
   setupPlayerControl : function(flgEnable)
@@ -309,6 +530,43 @@ Game.prototype = {
       var card = cards[i]
       card.interactive = flgEnable;
     }
+  },
+
+  checkLastAction : function()
+  {
+      if ((this.state == GameState.PlayerTurn && this.opponentCardStack.length == 0) ||
+          (this.state == GameState.OpponentTurn && this.playerCardView.cardNodeParent.children.length == 0))
+      {
+          this.fLastAction = true;
+      }
+      else this.fLastAction = false;
+  },
+  checkEndGame : function(){
+
+    if (this.fLastAction)
+    {
+      this.state = GameState.GameEndStart;
+      return true;
+    }
+
+    return false;
+  },
+
+  endGame : function(){
+    var flg = this.scores[0] - this.scores[1];
+    if (flg > 0) {
+      alert("You Win!");
+    }
+    else if(flg < 0)
+    {
+      alert("You Lose!");
+    }
+    else
+    {
+        alert("平手诶！！")
+    }
+
+    this.state = GameState.GameEndComplete;
   }
 
 };
@@ -340,19 +598,27 @@ function animate() {
       }break;
       case GameState.PlayerTurn:
       {
+        if(gameInstance.checkEndGame()) break;
+        gameInstance.checkLastAction();
         gameInstance.setupPlayerControl(true);
         gameInstance.showWaitingTip();
         gameInstance.updateTurnInfo();
-        gameInstance.state = GameState.PlayerTurnWaiting;
+        gameInstance.state = GameState.PlayerTurnThinking;
       }break;
-      case GameState.PlayerTurnWaiting:{}break;
+      case GameState.PlayerTurnThinking:{}break;
       case GameState.OpponentTurn:
       {
+        if(gameInstance.checkEndGame()) break;
+        gameInstance.checkLastAction();
         gameInstance.setupPlayerControl(false);
         gameInstance.updateTurnInfo();
-        gameInstance.state = GameState.OpponentTurnWaiting;
+        gameInstance.state = GameState.OpponentTurnThinking;
       }break;
-      case gameInstance.OpponentTurnWaiting:{}break;
+      case GameState.OpponentTurnThinking:{}break;
+      case GameState.GameEndStart:
+      {
+        gameInstance.endGame();
+      }break;
       default:break;
 
     }

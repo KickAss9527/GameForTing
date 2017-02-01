@@ -35,7 +35,7 @@ function CardOnBoard(card)
     this.dragging = true;
     this.originalPosition = new PIXI.Point();
     this.originalPosition.copy(this.position);
-    gameInstance.showTip(this.getData());
+    gameInstance.showPlayCardTip(this.getData());
   };
 
   var mouseUpCallback = function(event)
@@ -59,7 +59,7 @@ function CardOnBoard(card)
         tween.easing = PIXI.tween.Easing.inQuad();
         tween.start();
     }
-    gameInstance.hideTip(this.getData());
+    gameInstance.hidePlayCardTip(this.getData());
   };
 
   var mousemoveCallback = function(event)
@@ -79,12 +79,18 @@ function CardOnBoard(card)
       this.on('mousedown', mouseDoneCallback);
       this.on('mouseup', mouseUpCallback);
       this.on('mousemove', mousemoveCallback);
+      this.on('touchstart', mouseDoneCallback);
+      this.on('touchend', mouseUpCallback);
+      this.on('touchmove', mousemoveCallback);
     }
     else
     {
       this.removeListener('mousedown', mouseDoneCallback);
       this.removeListener('mouseup', mouseUpCallback);
       this.removeListener('mousemove', mousemoveCallback);
+      this.removeListener('touchstart', mouseDoneCallback);
+      this.removeListener('touchend', mouseUpCallback);
+      this.removeListener('touchmove', mousemoveCallback);
     }
 
   };

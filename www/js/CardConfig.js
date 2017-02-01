@@ -1,7 +1,6 @@
 var CardConfig = {
-  cardNumCnt : 58, //数值卡
-  cardCoverCnt : 10, //日食月食卡
-  cardHandCnt : 5, //手牌数
+  cardNumCnt : 12,//58, //数值卡
+  cardCoverCnt : 0, //日食月食卡
   cardSizeW : 100,
   cardSizeH : 100*1.7,
   cardSpaceBetween : 8,

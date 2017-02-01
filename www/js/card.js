@@ -122,7 +122,7 @@ function CollectTipView(manager)
   };
 
   this.on('click', function(){
-    this.manager.collect();
+    this.manager.evtCollect();
   });
 
 }CollectTipView.prototype = Object.create(PIXI.Graphics.prototype);
