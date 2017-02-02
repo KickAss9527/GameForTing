@@ -21,7 +21,7 @@ function CardOnBoard(card)
   this.originalPosition = null;
   this.interactive = true;
   this.targetPos = null;
-
+  this.touchOffset = null;
   if (card)
   {
     this.card = card;
@@ -32,6 +32,7 @@ function CardOnBoard(card)
   {
     this.alpha = 0.5;
     this.interactiveData = event.data;
+    this.touchOffset = this.interactiveData.getLocalPosition(this);
     this.dragging = true;
     this.originalPosition = new PIXI.Point();
     this.originalPosition.copy(this.position);
@@ -57,7 +58,12 @@ function CardOnBoard(card)
         tween.time = 300;
         tween.to(this.originalPosition);
         tween.easing = PIXI.tween.Easing.inQuad();
+        this.interactive = false;
         tween.start();
+        var that = this;
+        tween.on('end', function(){
+          that.interactive = true;
+        });
     }
     gameInstance.hidePlayCardTip(this.getData());
   };
@@ -67,8 +73,8 @@ function CardOnBoard(card)
     if(this.dragging)
     {
       var newPosition = this.interactiveData.getLocalPosition(this.parent);
-      this.position.x = newPosition.x - this.width*0.5;
-      this.position.y = newPosition.y - this.height*0.5;
+      this.position.x = newPosition.x - this.touchOffset.x;
+      this.position.y = newPosition.y - this.touchOffset.y;
     }
   };
 
@@ -78,18 +84,23 @@ function CardOnBoard(card)
     {
       this.on('mousedown', mouseDoneCallback);
       this.on('mouseup', mouseUpCallback);
+      this.on('mouseupoutside', mouseUpCallback);
       this.on('mousemove', mousemoveCallback);
+
       this.on('touchstart', mouseDoneCallback);
       this.on('touchend', mouseUpCallback);
+      this.on('touchendoutside', mouseUpCallback);
       this.on('touchmove', mousemoveCallback);
     }
     else
     {
       this.removeListener('mousedown', mouseDoneCallback);
       this.removeListener('mouseup', mouseUpCallback);
+      this.removeListener('mouseupoutside', mouseUpCallback);
       this.removeListener('mousemove', mousemoveCallback);
       this.removeListener('touchstart', mouseDoneCallback);
       this.removeListener('touchend', mouseUpCallback);
+      this.removeListener('touchendoutside', mouseUpCallback);
       this.removeListener('touchmove', mousemoveCallback);
     }
 

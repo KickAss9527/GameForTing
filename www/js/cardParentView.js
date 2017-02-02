@@ -65,15 +65,11 @@ function CardParentView(width, height, cardType)
       for (var i = 0; i < this.arrCardNode.length; i++) {
         var arr = this.arrCardNode[i];
         var pos = this.arrCardTip[i+1].position;
-        console.log(pos);
+
         for (var j = 0; j < arr.length; j++) {
           var card = arr[j];
           var tween = PIXI.tweenManager.createTween(card);
-          tween.time = 300;
-          if(this.arrCardNode.length == 1 && pos.x < 669)
-          {
-            console.log("????");
-          }
+          tween.time = 200;
           tween.to({"x":pos.x, "y":pos.y});
           tween.start();
           if (j == arr.length - 1 && i == this.arrCardNode.length-1) {
@@ -101,8 +97,8 @@ function CardParentView(width, height, cardType)
     this.dropAllCards = function()
     {
       var cards = this.cardNodeParent.children.concat();
-      for (var i = 0; i < this.cardNodeParent.length; i++) {
-        var card = this.cardNodeParent[i];
+      for (var i = 0; i < cards.length; i++) {
+        var card = cards[i];
         card.setupCardPlayerEvent(false);
       }
       this.cardNodeParent.removeChildren();
