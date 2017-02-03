@@ -69,13 +69,13 @@ function CardParentView(width, height, cardType)
         for (var j = 0; j < arr.length; j++) {
           var card = arr[j];
           var tween = PIXI.tweenManager.createTween(card);
-          tween.time = 200;
+          tween.time = GameConfig.AnimDuration_Short;
           tween.to({"x":pos.x, "y":pos.y});
           tween.start();
-          if (j == arr.length - 1 && i == this.arrCardNode.length-1) {
-            var that = this;
-            tween.on('end', function(){});
-          }
+          // if (j == arr.length - 1 && i == this.arrCardNode.length-1) {
+          //   var that = this;
+          //   tween.on('end', function(){});
+          // }
         }
       }
     };
@@ -134,7 +134,29 @@ function CardParentView(width, height, cardType)
       console.log(info);
       var score = this.collect(info);
       gameInstance.playerCollect(this.tag, info, score);
-    }
+      this.showCollectScore(score);
+    };
+
+    this.showCollectScore = function(value)
+    {
+      var tStyle = {
+        fontFamily : 'Arial',
+        fontSize: 40,
+        fill : 0x33FF33,
+        align : 'center'};
+      var lblScore = new PIXI.Text("+" + value,tStyle);
+      lblScore.anchor.set(0.5,0.5);
+      lblScore.position.set(this.viewCollectTip.x + this.viewCollectTip.width*0.5,
+                            this.viewCollectTip.y + this.viewCollectTip.height*0.5+20);
+      this.addChild(lblScore);
+      var tween = PIXI.tweenManager.createTween(lblScore);
+      tween.time = 1000;
+      tween.to({"x":lblScore.x, "y":lblScore.y-100, "alpha":0});
+      tween.start();
+      tween.on('end', function(){
+        lblScore.parent.removeChild(lblScore);
+      });
+    };
 
     this.collect = function(info){
       var score = 0;

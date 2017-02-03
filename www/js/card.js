@@ -121,6 +121,7 @@ function CollectTipView(manager)
     }
   };
 
+  var that = this;
   this.on('click', function(){
     this.manager.evtCollect();
   });

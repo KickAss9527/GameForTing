@@ -5,7 +5,9 @@ var GameConfig ={
   ViewTag_OpponentDay : 1,
   ViewTag_OpponentNight : 2,
   ViewTag_PlayerDay : 3,
-  ViewTag_PlayerNight : 4
+  ViewTag_PlayerNight : 4,
+  AnimDuration_Short : 150,
+  AnimDuration_Normal : 250
 }
 
 var GameState = {
@@ -122,10 +124,10 @@ Game.prototype = {
       this.opponentDayView.tag = GameConfig.ViewTag_OpponentDay;
       this.opponentNightView.tag = GameConfig.ViewTag_OpponentNight;
 
-      this.stage.addChild(this.playerDayView);
-      this.stage.addChild(this.playerNightView);
       this.stage.addChild(this.opponentDayView);
       this.stage.addChild(this.opponentNightView);
+      this.stage.addChild(this.playerDayView);
+      this.stage.addChild(this.playerNightView);
       this.stage.addChild(this.playerCardView);
 
       this.playerNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*2);
@@ -270,7 +272,7 @@ Game.prototype = {
       var node = nodes[i];
       var newPos = new PIXI.Point(x + i*(space + cardW), node.y);
       var tween = PIXI.tweenManager.createTween(node);
-      tween.time = 100;
+      tween.time = GameConfig.AnimDuration_Short;
       tween.to(newPos);
       tween.start();
     }
@@ -321,7 +323,14 @@ Game.prototype = {
       };
     }
     else {
-      this.state = GameState.PlayerTurn;
+      var tween = PIXI.tweenManager.createTween(this.playerCardView);
+      tween.time = GameConfig.AnimDuration_Short+1;
+      tween.to({"x":this.playerCardView.position.x, "y":this.playerCardView.position.y});
+      tween.start();
+      tween.on('end', function(){
+        gameInstance.state = GameState.PlayerTurn;
+      });
+
     }
   },
 
