@@ -125,5 +125,6 @@ function CollectTipView(manager)
   this.on('click', function(){
     this.manager.evtCollect();
   });
+  this.on('touchend', function(){this.manager.evtCollect();});
 
 }CollectTipView.prototype = Object.create(PIXI.Graphics.prototype);

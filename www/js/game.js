@@ -48,6 +48,7 @@ function Game(){
   this.lblEndInfo = null;
   this.askForMoreCardsCallback = null;
   this.fLastAction = false;
+  this.viewGameInfo = null;
 };
 
 Game.prototype = {
@@ -102,7 +103,7 @@ Game.prototype = {
 
       this.btnDiscard = new PIXI.Text("Discard",tStyle);
       this.btnDiscard.anchor.set(0.5,0.5);
-      this.btnDiscard.position.set(50, -20);
+      this.btnDiscard.position.set(50, 20);
       this.btnDiscard.interactive = true;
       var that = this;
       var discardEvt = function(){
@@ -115,6 +116,7 @@ Game.prototype = {
       this.playerCardView.addChild(this.btnDiscard);
 
 //load 4 game card board
+
       this.playerDayView = new CardParentView(width, height, CardConfig.Type_Day);
       this.playerNightView = new CardParentView(width, height, CardConfig.Type_Night);
       this.opponentDayView = new CardParentView(width, height, CardConfig.Type_Day);
@@ -130,21 +132,24 @@ Game.prototype = {
       this.stage.addChild(this.playerNightView);
       this.stage.addChild(this.playerCardView);
 
-      this.playerNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*2);
-      this.playerDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*3);
-      this.opponentNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*4);
-      this.opponentDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+10)*5);
+      var viewSpace = 10;
+      this.playerNightView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+viewSpace)*2);
+      this.playerDayView.position.set(1, GameConfig.sceneHeight - (CardConfig.cardSizeH+viewSpace)*3);
+      this.opponentNightView.position.set(1, CardConfig.cardSizeH + viewSpace*2);
+      this.opponentDayView.position.set(1, viewSpace);
 
 //load initial cardsprite
+var posY = GameConfig.sceneHeight*0.5 - CardConfig.cardSizeH*0.5 - 10;
       console.log("stack count : %d", this.cardStack.length);
       this.opponentCardStack = new Array();
       this.lblTurnInfo = new PIXI.Text("TurnInfo",tStyle);
-      this.lblTurnInfo.position.set(20, 20);
+      this.lblTurnInfo.position.set(20, posY);
+      this.lblTurnInfo.anchor.set(0, 0.5);
       this.stage.addChild(this.lblTurnInfo);
 
       this.lblEndInfo = new PIXI.Text("", tStyle);
-      this.lblEndInfo.position.set(GameConfig.sceneWidth-10, 25);
-      this.lblEndInfo.anchor.set(1, 0);
+      this.lblEndInfo.position.set(GameConfig.sceneWidth-10, posY);
+      this.lblEndInfo.anchor.set(1, 0.5);
       this.stage.addChild(this.lblEndInfo);
 
       if (this.state == GameState.PrepareSecondHand)

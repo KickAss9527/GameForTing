@@ -12,9 +12,10 @@ console.log('server start!!!');
 var iUserLogin = 0;
 var arrUsers = {};
 io.on('connection', function(socket) {
-
+  console.log("coming!!!!!");
     //接收并处理客户端发送的foo事件
     socket.on(ServerConfig.Msg_Login, function(data) {
+
       if (iUserLogin >= 2) {
         arrUsers = {};
         iUserLogin = 0;

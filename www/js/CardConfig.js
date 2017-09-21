@@ -1,10 +1,10 @@
 var CardConfig = {
-  cardNumCnt : 12,//58, //数值卡
-  cardCoverCnt : 0, //日食月食卡
+  cardNumCnt : 58,//58, //数值卡
+  cardCoverCnt : 10, //日食月食卡
   cardSizeW : 100,
   cardSizeH : 100*1.7,
   cardSpaceBetween : 8,
-  cardCollectMinCnt : 2,
+  cardCollectMinCnt : 5,
   Type_Day : 1,
   Type_Night : 2,
   BgColor_Day : 0xf5f5d2,

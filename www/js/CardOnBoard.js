@@ -30,7 +30,7 @@ function CardOnBoard(card)
 
   var mouseDoneCallback = function(event)
   {
-    this.alpha = 0.5;
+    this.alpha = 0.8;
     this.interactiveData = event.data;
     this.touchOffset = this.interactiveData.getLocalPosition(this);
     this.dragging = true;
